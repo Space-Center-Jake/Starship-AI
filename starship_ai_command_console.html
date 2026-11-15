@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A.U.R.A. // Starship AI Command Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #02060a;
+      --cyan-primary: #00f3ff;
+      --cyan-dim: rgba(0, 243, 255, 0.22);
+      --cyan-glow: rgba(0, 243, 255, 0.55);
+      --alert-red: #ff2a4b;
+      --alert-glow: rgba(255, 42, 75, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    input, textarea, select {
+      user-select: text;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--cyan-primary);
+      font-family: 'Rajdhani', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      margin: 0;
+      background-image:
+        radial-gradient(circle at 50% 45%, rgba(0, 243, 255, 0.06) 0%, rgba(2, 6, 10, 0.98) 72%),
+        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 36px 36px, 36px 36px;
+    }
+
+    body.red-alert {
+      --cyan-primary: #ff2a4b;
+      --cyan-dim: rgba(255, 42, 75, 0.24);
+      --cyan-glow: rgba(255, 42, 75, 0.65);
+      background-image:
+        radial-gradient(circle at 50% 45%, rgba(255, 42, 75, 0.11) 0%, rgba(2, 6, 10, 0.98) 72%),
+        linear-gradient(rgba(255, 42, 75, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 42, 75, 0.04) 1px, transparent 1px);
+    }
+
+    .font-display { font-family: 'Orbitron', sans-serif; }
+    .font-mono-tech { font-family: 'Share Tech Mono', monospace; }
+
+    /* CRT Scanlines & Vignette */
+    .scanline-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.32) 50%
+      );
+      background-size: 100% 4px;
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 49;
+      box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.92);
+    }
+
+    /* Custom Chamfered HUD Frames inspired directly by image_4e525a.png */
+    .hud-panel {
+      position: relative;
+      background: rgba(2, 10, 16, 0.85);
+      transition: all 0.3s ease;
+    }
+
+    .hud-frame-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      overflow: visible;
+    }
+
+    .hud-stroke {
+      stroke: var(--cyan-primary);
+      fill: rgba(0, 243, 255, 0.02);
+      filter: drop-shadow(0 0 4px var(--cyan-glow));
+      transition: stroke 0.3s ease, filter 0.3s ease;
+    }
+
+    .hud-fill-accent {
+      fill: var(--cyan-primary);
+      filter: drop-shadow(0 0 6px var(--cyan-glow));
+      transition: fill 0.3s ease;
+    }
+
+    /* Chamfered Navigation Tabs */
+    .nav-tab {
+      position: relative;
+      clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%, 0 12px);
+      background: rgba(0, 243, 255, 0.05);
+      border-bottom: 2px solid var(--cyan-dim);
+      color: rgba(0, 243, 255, 0.72);
+      transition: all 0.2s ease;
+    }
+
+    body.red-alert .nav-tab {
+      background: rgba(255, 42, 75, 0.06);
+      color: rgba(255, 42, 75, 0.78);
+    }
+
+    .nav-tab:hover {
+      background: rgba(0, 243, 255, 0.14);
+      color: var(--cyan-primary);
+      text-shadow: 0 0 8px var(--cyan-glow);
+    }
+
+    body.red-alert .nav-tab:hover {
+      background: rgba(255, 42, 75, 0.18);
+    }
+
+    .nav-tab.active {
+      background: var(--cyan-primary);
+      color: #02060a !important;
+      font-weight: 700;
+      box-shadow: 0 0 18px var(--cyan-glow);
+    }
+
+    /* Futuristic Chamfered Action Buttons */
+    .cyber-btn {
+      position: relative;
+      clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+      background: rgba(0, 243, 255, 0.09);
+      border: 1px solid var(--cyan-primary);
+      color: var(--cyan-primary);
+      transition: all 0.16s ease;
+      cursor: pointer;
+    }
+
+    body.red-alert .cyber-btn {
+      background: rgba(255, 42, 75, 0.1);
+    }
+
+    .cyber-btn:hover:not(:disabled) {
+      background: var(--cyan-primary);
+      color: #02060a;
+      box-shadow: 0 0 15px var(--cyan-glow);
+    }
+
+    .cyber-btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .cyber-btn.engaged {
+      background: var(--cyan-primary);
+      color: #02060a;
+      box-shadow: 0 0 16px var(--cyan-glow);
+    }
+
+    /* Push To Talk Button Pulse */
+    .ptt-btn {
+      clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px), 0 18px);
+      background: radial-gradient(circle at center, rgba(0, 243, 255, 0.2) 0%, rgba(2, 6, 10, 0.95) 85%);
+      border: 2px solid var(--cyan-primary);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.2), inset 0 0 18px rgba(0, 243, 255, 0.15);
+      transition: all 0.15s ease;
+    }
+
+    body.red-alert .ptt-btn {
+      background: radial-gradient(circle at center, rgba(255, 42, 75, 0.22) 0%, rgba(2, 6, 10, 0.95) 85%);
+    }
+
+    .ptt-btn.listening {
+      background: var(--cyan-primary);
+      color: #02060a;
+      box-shadow: 0 0 36px var(--cyan-primary), inset 0 0 12px #ffffff;
+      transform: scale(1.02);
+    }
+
+    .ptt-btn.muted-off-bridge {
+      opacity: 0.45;
+      border-style: dashed;
+      cursor: not-allowed;
+    }
+
+    /* Custom Range Sliders */
+    input[type="range"].cyber-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(0, 243, 255, 0.18);
+      outline: none;
+      border: 1px solid var(--cyan-dim);
+    }
+
+    input[type="range"].cyber-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 22px;
+      background: var(--cyan-primary);
+      cursor: pointer;
+      clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+      box-shadow: 0 0 10px var(--cyan-primary);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #02060a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--cyan-dim);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--cyan-primary);
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    .animate-pulse-fast {
+      animation: pulseGlow 1.1s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="selection:bg-cyan-400 selection:text-black">
+  <div class="scanline-overlay"></div>
+  <div class="vignette-overlay"></div>
+
+  <!-- Main Command Console Container -->
+  <div class="relative z-10 max-w-[1540px] mx-auto px-3 sm:px-6 py-3 sm:py-4 flex flex-col gap-4 min-h-screen">
+
+    <!-- TOP COMMAND HEADER & SUBSYSTEM NAVIGATION -->
+    <header class="hud-panel p-3 sm:p-4">
+      <!-- Top HUD Wireframe SVG matching top frame of reference image -->
+      <svg class="hud-frame-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
+        <polygon class="hud-stroke" stroke-width="2" points="18,2 340,2 355,10 660,10 675,2 982,2 998,18 998,62 965,98 630,98 615,90 385,90 370,98 18,98 2,82 2,18" />
+        <!-- Thick signature corner block (top right + bottom right) -->
+        <polygon class="hud-fill-accent" points="965,98 998,62 998,98" />
+        <polygon class="hud-fill-accent" points="340,2 675,2 660,10 355,10" />
+        <!-- Crosshair target badge top-right -->
+        <circle cx="968" cy="18" r="7" class="hud-fill-accent" />
+        <line x1="965" y1="18" x2="971" y2="18" stroke="#02060a" stroke-width="1.8" />
+        <line x1="968" y1="15" x2="968" y2="21" stroke="#02060a" stroke-width="1.8" />
+      </svg>
+
+      <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <!-- Ship Identity & Stardate -->
+        <div class="flex items-center justify-between lg:justify-start gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 flex items-center justify-center border border-current bg-cyan-950/30" style="clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="font-display font-black text-base sm:text-xl tracking-widest uppercase">USS HYPERION // NX-9402</h1>
+                <span id="alert-badge" class="font-mono-tech text-xs px-2 py-0.5 border border-current bg-cyan-500/10 tracking-wider">CONDITION GREEN</span>
+              </div>
+              <p class="font-mono-tech text-xs opacity-75 tracking-wider">AI CORE: A.U.R.A. v9.4 // SECTOR 004-DELTA // <span id="stardate-clock">STARDATE 2026.319</span></p>
+            </div>
+          </div>
+
+          <!-- Red Alert & Audio Mute Quick Controls (Mobile/Desktop) -->
+          <div class="flex items-center gap-2">
+            <button id="sfx-toggle-btn" onclick="toggleSfx()" class="cyber-btn px-2.5 py-1.5 font-mono-tech text-xs tracking-wider" title="Toggle UI Sound Effects">
+              SFX: ON
+            </button>
+            <button id="red-alert-btn" onclick="toggleRedAlert()" class="cyber-btn px-3 py-1.5 font-display font-bold text-xs tracking-widest">
+              RED ALERT
+            </button>
+          </div>
+        </div>
+
+        <!-- Subsystem Navigation Tabs -->
+        <nav class="flex flex-wrap items-center gap-1.5 sm:gap-2" aria-label="Subsystem Navigation">
+          <button data-tab="bridge" onclick="switchSubsystem('bridge')" class="nav-tab active px-3 sm:px-4 py-2 font-display text-xs sm:text-sm tracking-wider uppercase cursor-pointer">
+            01 // BRIDGE OVERVIEW
+          </button>
+          <button data-tab="propulsion" onclick="switchSubsystem('propulsion')" class="nav-tab px-3 sm:px-4 py-2 font-display text-xs sm:text-sm tracking-wider uppercase cursor-pointer">
+            02 // PROPULSION &amp; WARP
+          </button>
+          <button data-tab="tactical" onclick="switchSubsystem('tactical')" class="nav-tab px-3 sm:px-4 py-2 font-display text-xs sm:text-sm tracking-wider uppercase cursor-pointer">
+            03 // SHIELDS &amp; TACTICAL
+          </button>
+          <button data-tab="navigation" onclick="switchSubsystem('navigation')" class="nav-tab px-3 sm:px-4 py-2 font-display text-xs sm:text-sm tracking-wider uppercase cursor-pointer">
+            04 // NAV &amp; SENSORS
+          </button>
+          <button data-tab="lifesupport" onclick="switchSubsystem('lifesupport')" class="nav-tab px-3 sm:px-4 py-2 font-display text-xs sm:text-sm tracking-wider uppercase cursor-pointer">
+            05 // LIFE SUPPORT &amp; POWER
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- MAIN WORKSPACE GRID -->
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+
+      <!-- LEFT COLUMN (4 cols on lg): PERSISTENT HOLOGRAPHIC AI ENTITY & VOICE COMMS CORE -->
+      <section class="lg:col-span-4 flex flex-col gap-4">
+        <div class="hud-panel p-4 sm:p-5 flex-1 flex flex-col justify-between">
+          <!-- Wireframe SVG matching middle/bottom reference image shapes -->
+          <svg class="hud-frame-svg" viewBox="0 0 400 680" preserveAspectRatio="none">
+            <polygon class="hud-stroke" stroke-width="2" points="2,2 85,2 105,14 335,14 355,2 398,2 398,678 245,678 225,666 135,666 115,678 2,678 2,460 14,445 14,235 2,220" />
+            <!-- Thick chamfered blocks -->
+            <polygon class="hud-fill-accent" points="85,2 355,2 335,14 105,14" />
+            <polygon class="hud-fill-accent" points="115,678 245,678 225,666 135,666" />
+            <polygon class="hud-fill-accent" points="2,655 95,655 85,665 2,665" />
+          </svg>
+
+          <div class="relative z-10 flex flex-col h-full justify-between gap-3">
+            <!-- AI Header & Comms Safety Status -->
+            <div>
+              <div class="flex items-center justify-between border-b border-current/25 pb-2">
+                <div>
+                  <span class="font-mono-tech text-[11px] opacity-70 block tracking-widest">SYNTHETIC NEURAL INTERFACE</span>
+                  <h2 class="font-display font-bold text-base sm:text-lg tracking-widest">A.U.R.A. HOLOGRAM</h2>
+                </div>
+                <div class="text-right">
+                  <span id="ai-state-badge" class="inline-block font-mono-tech text-xs px-2.5 py-1 border border-current bg-cyan-500/15 font-bold tracking-widest">
+                    STATE: IDLE
+                  </span>
+                </div>
+              </div>
+
+              <!-- Safety Mute Banner -->
+              <div id="comms-safety-banner" class="mt-2 px-3 py-1.5 border border-current/40 bg-cyan-950/30 flex items-center justify-between text-xs font-mono-tech">
+                <span id="comms-safety-text">COMMS READY // HOLD PTT TO SPEAK</span>
+                <span id="comms-mic-indicator" class="w-2.5 h-2.5 rounded-full bg-current opacity-40"></span>
+              </div>
+            </div>
+
+            <!-- Interactive Canvas Holographic AI Entity -->
+            <div class="relative w-full aspect-square max-h-[290px] mx-auto flex items-center justify-center my-1">
+              <canvas id="hologram-canvas" class="w-full h-full block"></canvas>
+              <!-- Corner Telemetry Overlays inside Hologram Box -->
+              <div class="absolute top-2 left-2 font-mono-tech text-[10px] opacity-70 leading-tight pointer-events-none">
+                <div>SYNTH_VOICE: <span id="active-voice-name">NEURAL-F1</span></div>
+                <div>FREQ_MOD: <span id="voice-freq-val">440.0 Hz</span></div>
+              </div>
+              <div class="absolute bottom-2 right-2 font-mono-tech text-[10px] opacity-70 text-right leading-tight pointer-events-none">
+                <div>NEURAL_SYNC: 99.8%</div>
+                <div>API_LINK: <span id="api-status-label">LOCAL + GEMINI</span></div>
+              </div>
+            </div>
+
+            <!-- Push-To-Talk Control & Voice Settings -->
+            <div class="flex flex-col gap-2.5">
+              <button
+                id="ptt-button"
+                type="button"
+                class="ptt-btn w-full py-3.5 px-4 flex flex-col items-center justify-center gap-1 cursor-pointer select-none"
+                aria-label="Hold to speak to Starship AI"
+              >
+                <div class="flex items-center gap-2 font-display font-bold text-sm sm:text-base tracking-widest">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="22"/>
+                  </svg>
+                  <span id="ptt-label">HOLD TO SPEAK [SPACE / PTT]</span>
+                </div>
+                <span id="ptt-sublabel" class="font-mono-tech text-[11px] opacity-75">
+                  RELEASE OR SWITCH TAB TO AUTO-MUTE
+                </span>
+              </button>
+
+              <!-- Compact Voice Synth Controls & API Config -->
+              <div class="grid grid-cols-2 gap-2 text-xs font-mono-tech pt-1">
+                <div class="border border-current/30 p-2 bg-black/40">
+                  <div class="flex justify-between mb-1">
+                    <span>PITCH</span>
+                    <span id="pitch-val">1.02</span>
+                  </div>
+                  <input id="voice-pitch" type="range" min="0.75" max="1.35" step="0.02" value="1.02" class="cyber-slider" oninput="updateVoiceParams()">
+                </div>
+                <div class="border border-current/30 p-2 bg-black/40">
+                  <div class="flex justify-between mb-1">
+                    <span>CADENCE</span>
+                    <span id="rate-val">1.03</span>
+                  </div>
+                  <input id="voice-rate" type="range" min="0.8" max="1.35" step="0.02" value="1.03" class="cyber-slider" oninput="updateVoiceParams()">
+                </div>
+              </div>
+
+              <!-- Optional Gemini API Key & Voice Selector Drawer -->
+              <details class="border border-current/30 bg-black/50 text-xs font-mono-tech">
+                <summary class="px-3 py-1.5 cursor-pointer hover:bg-cyan-500/10 flex items-center justify-between">
+                  <span>// VOICE &amp; GEMINI AI UPLINK CONFIG</span>
+                  <span>[+]</span>
+                </summary>
+                <div class="p-2.5 border-t border-current/25 flex flex-col gap-2">
+                  <div>
+                    <label class="block opacity-75 mb-1">SYNTHETIC VOICE PROFILE:</label>
+                    <select id="voice-select" class="w-full bg-[#02060a] border border-current/50 px-2 py-1 text-xs focus:outline-none"></select>
+                  </div>
+                  <div>
+                    <label class="block opacity-75 mb-1">GEMINI API KEY (OPTIONAL - LEAVE BLANK FOR AUTO/LOCAL):</label>
+                    <input id="gemini-api-key" type="password" placeholder="AIzaSy... (uses built-in or local core if blank)" class="w-full bg-[#02060a] border border-current/50 px-2 py-1 text-xs focus:outline-none" />
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN (8 cols on lg): DYNAMIC SUBSYSTEM PANELS + AI TRANSCRIPT TERMINAL -->
+      <section class="lg:col-span-8 flex flex-col gap-4">
+
+        <!-- DYNAMIC SUBSYSTEM VIEWPORT (Switches between 5 Subsystems) -->
+        <div class="hud-panel p-4 sm:p-5 flex-1">
+          <!-- Top-Right Chamfered Wireframe matching image_4e525a.png -->
+          <svg class="hud-frame-svg" viewBox="0 0 800 440" preserveAspectRatio="none">
+            <polygon class="hud-stroke" stroke-width="2" points="20,2 250,2 270,12 560,12 580,2 780,2 798,20 798,395 755,438 480,438 460,428 320,428 300,438 20,438 2,420 2,20" />
+            <!-- Heavy bottom-right chamfer accent block -->
+            <polygon class="hud-fill-accent" points="755,438 798,395 798,438" />
+            <polygon class="hud-fill-accent" points="250,2 580,2 560,12 270,12" />
+          </svg>
+
+          <div class="relative z-10 h-full flex flex-col justify-between">
+
+            <!-- VIEW 1: BRIDGE OVERVIEW -->
+            <div id="view-bridge" class="subsystem-view flex flex-col gap-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-current/30 pb-2">
+                <div>
+                  <span class="font-mono-tech text-xs opacity-70">SUBSYSTEM 01 // COMMAND DECK</span>
+                  <h2 class="font-display font-bold text-lg sm:text-xl tracking-wider">BRIDGE TELEMETRY &amp; MASTER CONTROLS</h2>
+                </div>
+                <div class="font-mono-tech text-xs px-2.5 py-1 border border-current/40">
+                  HULL INTEGRITY: <span id="hull-val" class="font-bold">100.0%</span>
+                </div>
+              </div>
+
+              <!-- 4 Core Telemetry Cards -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-[11px] opacity-70 block">WARP VELOCITY</span>
+                  <div class="font-display font-bold text-xl sm:text-2xl mt-1" id="ov-warp">IMPULSE 0.25c</div>
+                  <div class="w-full h-1.5 bg-cyan-950 mt-2 overflow-hidden">
+                    <div id="ov-warp-bar" class="h-full bg-current transition-all duration-300" style="width: 22%"></div>
+                  </div>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-[11px] opacity-70 block">DEFLECTOR SHIELDS</span>
+                  <div class="font-display font-bold text-xl sm:text-2xl mt-1" id="ov-shields">88.4%</div>
+                  <div class="w-full h-1.5 bg-cyan-950 mt-2 overflow-hidden">
+                    <div id="ov-shields-bar" class="h-full bg-current transition-all duration-300" style="width: 88%"></div>
+                  </div>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-[11px] opacity-70 block">CORE OUTPUT</span>
+                  <div class="font-display font-bold text-xl sm:text-2xl mt-1" id="ov-power">4,820 TW</div>
+                  <div class="w-full h-1.5 bg-cyan-950 mt-2 overflow-hidden">
+                    <div id="ov-power-bar" class="h-full bg-current transition-all duration-300" style="width: 78%"></div>
+                  </div>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-[11px] opacity-70 block">LIFE SUPPORT O2</span>
+                  <div class="font-display font-bold text-xl sm:text-2xl mt-1" id="ov-o2">99.6%</div>
+                  <div class="w-full h-1.5 bg-cyan-950 mt-2 overflow-hidden">
+                    <div id="ov-o2-bar" class="h-full bg-current transition-all duration-300" style="width: 99%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live Oscilloscope & Quick Command Matrix -->
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
+                <div class="md:col-span-7 border border-current/35 bg-black/60 p-3 flex flex-col justify-between">
+                  <div class="flex justify-between items-center font-mono-tech text-xs mb-1">
+                    <span>// QUANTUM CORE HARMONIC WAVEFORM</span>
+                    <span id="wave-sync-readout">PHASE LOCK: 99.94%</span>
+                  </div>
+                  <canvas id="bridge-waveform-canvas" class="w-full h-28 block"></canvas>
+                </div>
+
+                <div class="md:col-span-5 border border-current/35 bg-black/60 p-3 flex flex-col justify-between gap-2">
+                  <span class="font-mono-tech text-xs opacity-75">// TACTICAL QUICK OVERRIDES</span>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-engage-warp" onclick="toggleWarpDrive()" class="cyber-btn py-2 px-2 font-display text-xs font-bold tracking-wider">
+                      ENGAGE WARP
+                    </button>
+                    <button id="btn-raise-shields" onclick="boostShields()" class="cyber-btn py-2 px-2 font-display text-xs font-bold tracking-wider">
+                      MAX SHIELDS
+                    </button>
+                    <button id="btn-sensor-sweep" onclick="runSensorSweep()" class="cyber-btn py-2 px-2 font-display text-xs font-bold tracking-wider">
+                      SENSOR SWEEP
+                    </button>
+                    <button id="btn-boost-o2" onclick="boostLifeSupport()" class="cyber-btn py-2 px-2 font-display text-xs font-bold tracking-wider">
+                      PURGE O2
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW 2: PROPULSION & WARP -->
+            <div id="view-propulsion" class="subsystem-view hidden flex flex-col gap-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-current/30 pb-2">
+                <div>
+                  <span class="font-mono-tech text-xs opacity-70">SUBSYSTEM 02 // ENGINEERING</span>
+                  <h2 class="font-display font-bold text-lg sm:text-xl tracking-wider">MATTER / ANTIMATTER WARP PROPULSION</h2>
+                </div>
+                <span id="warp-status-tag" class="font-mono-tech text-xs px-2.5 py-1 border border-current">DRIVE: SUBLIGHT IMPULSE</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">WARP FACTOR TARGET</span>
+                  <div class="font-display font-bold text-2xl mt-1" id="prop-warp-factor">WARP 0.0</div>
+                  <input id="warp-factor-slider" type="range" min="0" max="9.9" step="0.1" value="0" class="cyber-slider mt-3" oninput="setWarpFactor(this.value)">
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">CORE PLASMA TEMP</span>
+                  <div class="font-display font-bold text-2xl mt-1" id="prop-core-temp">1,420 K</div>
+                  <span class="font-mono-tech text-xs opacity-70 block mt-2">CONTAINMENT: <span id="prop-containment">STABLE</span></span>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">ANTIMATTER INJECTION</span>
+                  <div class="font-display font-bold text-2xl mt-1" id="prop-antimatter">14.2 mg/s</div>
+                  <span class="font-mono-tech text-xs opacity-70 block mt-2">DILITHIUM MATRIX: 97.4%</span>
+                </div>
+              </div>
+
+              <div class="border border-current/35 bg-black/60 p-3">
+                <div class="flex justify-between font-mono-tech text-xs mb-2">
+                  <span>// NACELLE FLUX &amp; PLASMA INJECTOR TELEMETRY</span>
+                  <button onclick="ventPlasma()" class="cyber-btn px-3 py-1 font-display text-xs">VENT EXCESS PLASMA</button>
+                </div>
+                <canvas id="propulsion-canvas" class="w-full h-28 block"></canvas>
+              </div>
+            </div>
+
+            <!-- VIEW 3: SHIELDS & TACTICAL -->
+            <div id="view-tactical" class="subsystem-view hidden flex flex-col gap-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-current/30 pb-2">
+                <div>
+                  <span class="font-mono-tech text-xs opacity-70">SUBSYSTEM 03 // DEFENSE &amp; WEAPONS</span>
+                  <h2 class="font-display font-bold text-lg sm:text-xl tracking-wider">DEFLECTOR GRID &amp; TACTICAL ARRAYS</h2>
+                </div>
+                <span id="weapons-status-tag" class="font-mono-tech text-xs px-2.5 py-1 border border-current">WEAPONS: STANDBY</span>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">FORE SHIELDS</span>
+                  <div class="font-display font-bold text-xl mt-1" id="tac-fore">90%</div>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">AFT SHIELDS</span>
+                  <div class="font-display font-bold text-xl mt-1" id="tac-aft">87%</div>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">PHASER CAPACITORS</span>
+                  <div class="font-display font-bold text-xl mt-1" id="tac-phaser">100%</div>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">QUANTUM TORPEDOES</span>
+                  <div class="font-display font-bold text-xl mt-1" id="tac-torpedoes">48 READY</div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="border border-current/35 bg-black/60 p-3 flex flex-col justify-between gap-2">
+                  <span class="font-mono-tech text-xs">// SHIELD HARMONIC MODULATION</span>
+                  <p class="font-mono-tech text-xs opacity-75">Rotate deflector frequency to counter subspace plasma interference and weapon lock-ons.</p>
+                  <div class="flex gap-2">
+                    <button onclick="boostShields()" class="cyber-btn flex-1 py-2 font-display text-xs font-bold">DIVERT POWER TO SHIELDS</button>
+                    <button onclick="rotateHarmonics()" class="cyber-btn flex-1 py-2 font-display text-xs font-bold">ROTATE HARMONICS</button>
+                  </div>
+                </div>
+                <div class="border border-current/35 bg-black/60 p-3 flex flex-col justify-between gap-2">
+                  <span class="font-mono-tech text-xs">// TARGETING &amp; COUNTERMEASURES</span>
+                  <p class="font-mono-tech text-xs opacity-75" id="tac-target-lock">NO HOSTILE VESSELS LOCKED IN SECTOR 004-DELTA.</p>
+                  <div class="flex gap-2">
+                    <button onclick="toggleWeaponsArm()" id="btn-arm-weapons" class="cyber-btn flex-1 py-2 font-display text-xs font-bold">ARM PHASER ARRAYS</button>
+                    <button onclick="fireTestPulse()" class="cyber-btn flex-1 py-2 font-display text-xs font-bold">TEST PULSE</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW 4: NAVIGATION & SENSORS -->
+            <div id="view-navigation" class="subsystem-view hidden flex flex-col gap-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-current/30 pb-2">
+                <div>
+                  <span class="font-mono-tech text-xs opacity-70">SUBSYSTEM 04 // ASTROMETRICS</span>
+                  <h2 class="font-display font-bold text-lg sm:text-xl tracking-wider">LONG-RANGE SENSORS &amp; HELM</h2>
+                </div>
+                <span class="font-mono-tech text-xs px-2.5 py-1 border border-current">HEADING: <span id="nav-heading">142.8 MARK 04</span></span>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                <div class="md:col-span-5 border border-current/35 bg-black/60 p-2 flex items-center justify-center">
+                  <canvas id="radar-canvas" class="w-full max-w-[210px] aspect-square block"></canvas>
+                </div>
+                <div class="md:col-span-7 flex flex-col gap-3">
+                  <div class="grid grid-cols-2 gap-2 font-mono-tech text-xs">
+                    <div class="border border-current/35 bg-black/50 p-2.5">
+                      <span class="opacity-70 block">GALACTIC COORDS</span>
+                      <span class="text-sm font-bold" id="nav-coords">X: 482.19 // Y: -109.44</span>
+                    </div>
+                    <div class="border border-current/35 bg-black/50 p-2.5">
+                      <span class="opacity-70 block">GRAVIMETRIC ANOMALIES</span>
+                      <span class="text-sm font-bold" id="nav-anomalies">0 DETECTED</span>
+                    </div>
+                  </div>
+                  <div class="border border-current/35 bg-black/50 p-3 flex flex-col gap-2">
+                    <span class="font-mono-tech text-xs">// SENSOR ARRAY ACTIONS</span>
+                    <div class="flex flex-wrap gap-2">
+                      <button onclick="runSensorSweep()" class="cyber-btn px-3 py-2 font-display text-xs font-bold">DEEP SPACE SCAN</button>
+                      <button onclick="plotNewCourse()" class="cyber-btn px-3 py-2 font-display text-xs font-bold">PLOT NEW HEADING</button>
+                    </div>
+                    <div id="sensor-scan-result" class="font-mono-tech text-xs opacity-80 mt-1">
+                      PASSIVE TELEMETRY NOMINAL. SUBSPACE RELAY BUOY DETECTED AT 1.4 LY.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW 5: LIFE SUPPORT & POWER -->
+            <div id="view-lifesupport" class="subsystem-view hidden flex flex-col gap-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-current/30 pb-2">
+                <div>
+                  <span class="font-mono-tech text-xs opacity-70">SUBSYSTEM 05 // ENVIRONMENTAL &amp; GRID</span>
+                  <h2 class="font-display font-bold text-lg sm:text-xl tracking-wider">LIFE SUPPORT &amp; POWER DISTRIBUTION</h2>
+                </div>
+                <span class="font-mono-tech text-xs px-2.5 py-1 border border-current">DECK ATMOSPHERE: OPTIMAL</span>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">O2 SATURATION</span>
+                  <div class="font-display font-bold text-xl mt-1" id="ls-o2">20.9%</div>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">CABIN PRESSURE</span>
+                  <div class="font-display font-bold text-xl mt-1" id="ls-pressure">101.3 kPa</div>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">ARTIFICIAL GRAVITY</span>
+                  <div class="font-display font-bold text-xl mt-1" id="ls-grav">1.00 G</div>
+                </div>
+                <div class="border border-current/35 bg-black/50 p-3">
+                  <span class="font-mono-tech text-xs opacity-70">CO2 SCRUBBERS</span>
+                  <div class="font-display font-bold text-xl mt-1" id="ls-scrub">99.2%</div>
+                </div>
+              </div>
+
+              <div class="border border-current/35 bg-black/60 p-3 flex flex-col gap-3">
+                <div class="flex justify-between items-center font-mono-tech text-xs">
+                  <span>// REACTOR POWER ALLOCATION MATRIX</span>
+                  <button onclick="boostLifeSupport()" class="cyber-btn px-3 py-1 font-display text-xs">BOOST SCRUBBERS &amp; O2</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono-tech text-xs">
+                  <div>
+                    <div class="flex justify-between mb-1"><span>PROPULSION GRID</span><span id="pwr-prop-val">40%</span></div>
+                    <input type="range" min="10" max="80" value="40" class="cyber-slider" oninput="rebalancePower('prop', this.value)">
+                  </div>
+                  <div>
+                    <div class="flex justify-between mb-1"><span>SHIELD GRID</span><span id="pwr-shd-val">35%</span></div>
+                    <input type="range" min="10" max="80" value="35" class="cyber-slider" oninput="rebalancePower('shd', this.value)">
+                  </div>
+                  <div>
+                    <div class="flex justify-between mb-1"><span>LIFE SUPPORT / AI</span><span id="pwr-ls-val">25%</span></div>
+                    <input type="range" min="10" max="80" value="25" class="cyber-slider" oninput="rebalancePower('ls', this.value)">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- BOTTOM PANEL: A.U.R.A. AI COMMUNICATIONS LOG & COMMAND INPUT -->
+        <div class="hud-panel p-4 flex flex-col gap-2.5">
+          <!-- Bottom HUD Wireframe matching 3rd frame of image_4e525a.png -->
+          <svg class="hud-frame-svg" viewBox="0 0 800 220" preserveAspectRatio="none">
+            <polygon class="hud-stroke" stroke-width="2" points="2,2 65,2 85,18 220,18 240,2 680,2 700,14 798,14 798,218 450,218 430,206 180,206 160,218 24,218 2,196" />
+            <polygon class="hud-fill-accent" points="240,2 680,2 665,12 255,12" />
+            <polygon class="hud-fill-accent" points="430,206 798,206 798,218 450,218" />
+          </svg>
+
+          <div class="relative z-10 flex flex-col gap-2">
+            <div class="flex items-center justify-between font-mono-tech text-xs border-b border-current/25 pb-1">
+              <span>// A.U.R.A. NEURAL LOG &amp; COMMAND TRANSCRIPT</span>
+              <div class="flex items-center gap-2">
+                <button onclick="stopSpeaking()" class="cyber-btn px-2 py-0.5 text-[11px]">SILENCE VOICE</button>
+                <button onclick="clearTranscript()" class="cyber-btn px-2 py-0.5 text-[11px]">CLEAR LOG</button>
+              </div>
+            </div>
+
+            <!-- Scrollable Message Log -->
+            <div id="chat-log" class="h-32 sm:h-36 overflow-y-auto flex flex-col gap-2 pr-1 font-mono-tech text-xs sm:text-sm">
+              <div class="border-l-2 border-current pl-2.5 py-0.5">
+                <span class="opacity-60">[A.U.R.A.]:</span> Neural core online. All primary systems nominal aboard USS Hyperion. Hold the Push-To-Talk button or Spacebar to speak, or enter a direct command below.
+              </div>
+            </div>
+
+            <!-- Text Command Input Bar -->
+            <form id="command-form" onsubmit="handleTextCommandSubmit(event)" class="flex gap-2 pt-1">
+              <input
+                id="command-input"
+                type="text"
+                autocomplete="off"
+                placeholder="Enter command (e.g., 'Status report', 'Engage warp', 'Raise shields', 'Red alert')..."
+                class="flex-1 bg-black/75 border border-current/50 px-3 py-2 font-mono-tech text-xs sm:text-sm focus:outline-none focus:border-current placeholder:opacity-45"
+              />
+              <button type="submit" class="cyber-btn px-4 py-2 font-display font-bold text-xs tracking-widest">
+                TRANSMIT
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /**
+     * =========================================================================
+     * STARSHIP AI COMMAND CONSOLE (A.U.R.A. MARK-IX)
+     * Core Telemetry, Holographic Canvas, Push-to-Talk & Gemini Integration
+     * =========================================================================
+     */
+
+    // --- GLOBAL SHIP & AI STATE ---
+    const shipState = {
+      activeTab: 'bridge',
+      redAlert: false,
+      sfxEnabled: true,
+      warpFactor: 0.0,
+      warpEngaged: false,
+      shields: 88.4,
+      foreShields: 90,
+      aftShields: 87,
+      hull: 100.0,
+      coreTemp: 1420,
+      antimatterFlow: 14.2,
+      reactorOutput: 4820,
+      o2Level: 99.6,
+      scrubberEfficiency: 99.2,
+      weaponsArmed: false,
+      heading: 142.8,
+      coords: { x: 482.19, y: -109.44 },
+      powerGrid: { prop: 40, shd: 35, ls: 25 },
+      // AI & Voice States: 'IDLE' | 'LISTENING' | 'PROCESSING' | 'SPEAKING' | 'MUTED'
+      aiState: 'IDLE',
+      isPttHeld: false,
+      isOnBridge: true,
+      isWindowVisible: true,
+      speechIntensity: 0
+    };
+
+    // --- WEB AUDIO API SCI-FI SYNTHESIZER (NO EXTERNAL AUDIO FILES) ---
+    let audioCtx = null;
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSciFiChirp(type = 'click') {
+      if (!shipState.sfxEnabled) return;
+      try {
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(980, now);
+          osc.frequency.exponentialRampToValueAtTime(1480, now + 0.06);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+          osc.start(now);
+          osc.stop(now + 0.07);
+        } else if (type === 'ptt_on') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(1040, now + 0.11);
+          gain.gain.setValueAtTime(0.11, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'ptt_off') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(420, now + 0.1);
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+          osc.start(now);
+          osc.stop(now + 0.11);
+        } else if (type === 'alert') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.linearRampToValueAtTime(660, now + 0.18);
+          osc.frequency.linearRampToValueAtTime(440, now + 0.36);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+          osc.start(now);
+          osc.stop(now + 0.38);
+        }
+      } catch (e) {
+        // Ignore audio context restrictions if not yet interacted
+      }
+    }
+
+    function toggleSfx() {
+      shipState.sfxEnabled = !shipState.sfxEnabled;
+      document.getElementById('sfx-toggle-btn').textContent = `SFX: ${shipState.sfxEnabled ? 'ON' : 'OFF'}`;
+      if (shipState.sfxEnabled) playSciFiChirp('click');
+    }
+
+    // --- NATURAL-SOUNDING SYNTHETIC VOICE (WEB SPEECH SYNTHESIS) ---
+    let selectedVoice = null;
+    let availableVoices = [];
+
+    function populateVoices() {
+      if (!('speechSynthesis' in window)) return;
+      availableVoices = window.speechSynthesis.getVoices();
+      const selectEl = document.getElementById('voice-select');
+      if (!selectEl || availableVoices.length === 0) return;
+
+      selectEl.innerHTML = '';
+
+      // Rank natural/neural English voices highest
+      const scoreVoice = (v) => {
+        let score = 0;
+        const name = v.name.toLowerCase();
+        if (v.lang.startsWith('en')) score += 20;
+        if (name.includes('natural') || name.includes('neural')) score += 40;
+        if (name.includes('google us english') || name.includes('google uk english female')) score += 35;
+        if (name.includes('aria') || name.includes('jenny') || name.includes('samantha') || name.includes('ava') || name.includes('serena')) score += 30;
+        if (name.includes('female')) score += 10;
+        return score;
+      };
+
+      const sorted = [...availableVoices].sort((a, b) => scoreVoice(b) - scoreVoice(a));
+      sorted.forEach((voice, idx) => {
+        const opt = document.createElement('option');
+        opt.value = voice.name;
+        opt.textContent = `${voice.name} (${voice.lang})`;
+        selectEl.appendChild(opt);
+        if (idx === 0) selectedVoice = voice;
+      });
+
+      selectEl.onchange = () => {
+        selectedVoice = availableVoices.find(v => v.name === selectEl.value) || selectedVoice;
+      };
+
+      if (selectedVoice) {
+        document.getElementById('active-voice-name').textContent = selectedVoice.name.slice(0, 14).toUpperCase();
+      }
+    }
+
+    if ('speechSynthesis' in window) {
+      populateVoices();
+      window.speechSynthesis.onvoiceschanged = populateVoices;
+    }
+
+    function updateVoiceParams() {
+      const pitch = document.getElementById('voice-pitch').value;
+      const rate = document.getElementById('voice-rate').value;
+      document.getElementById('pitch-val').textContent = parseFloat(pitch).toFixed(2);
+      document.getElementById('rate-val').textContent = parseFloat(rate).toFixed(2);
+    }
+
+    function speakAIResponse(text) {
+      if (!('speechSynthesis' in window)) return;
+      // Do not speak if user navigated away from bridge or hid tab
+      if (!shipState.isOnBridge || !shipState.isWindowVisible) {
+        setAiState('MUTED');
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (selectedVoice) utterance.voice = selectedVoice;
+      utterance.pitch = parseFloat(document.getElementById('voice-pitch')?.value || '1.02');
+      utterance.rate = parseFloat(document.getElementById('voice-rate')?.value || '1.03');
+
+      utterance.onstart = () => {
+        if (!shipState.isOnBridge || !shipState.isWindowVisible) {
+          window.speechSynthesis.cancel();
+          return;
+        }
+        setAiState('SPEAKING');
+      };
+
+      utterance.onboundary = () => {
+        shipState.speechIntensity = 0.65 + Math.random() * 0.35;
+      };
+
+      utterance.onend = () => {
+        shipState.speechIntensity = 0;
+        if (!shipState.isPttHeld) {
+          setAiState(shipState.isOnBridge && shipState.isWindowVisible ? 'IDLE' : 'MUTED');
+        }
+      };
+
+      utterance.onerror = () => {
+        shipState.speechIntensity = 0;
+        setAiState(shipState.isOnBridge && shipState.isWindowVisible ? 'IDLE' : 'MUTED');
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function stopSpeaking() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      shipState.speechIntensity = 0;
+      if (!shipState.isPttHeld) {
+        setAiState(shipState.isOnBridge && shipState.isWindowVisible ? 'IDLE' : 'MUTED');
+      }
+    }
+
+    // --- PUSH-TO-TALK (WEB SPEECH RECOGNITION) & AUTO-DISABLE SAFETY ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let capturedTranscript = '';
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        if (!shipState.isPttHeld || !shipState.isOnBridge || !shipState.isWindowVisible) {
+          try { recognition.stop(); } catch (e) {}
+          return;
+        }
+        setAiState('LISTENING');
+      };
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        let finalStr = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcriptChunk = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalStr += transcriptChunk;
+          } else {
+            interim += transcriptChunk;
+          }
+        }
+        if (finalStr) {
+          capturedTranscript += ' ' + finalStr;
+        }
+        const preview = (capturedTranscript + ' ' + interim).trim();
+        if (preview) {
+          document.getElementById('ptt-sublabel').textContent = `HEARING: "${preview.toUpperCase()}"`;
+        }
+      };
+
+      recognition.onerror = (event) => {
+        if (event.error !== 'aborted' && event.error !== 'no-speech') {
+          appendChatMessage('SYS', `Voice sensor warning: ${event.error}. Use text bar if microphone permission is blocked.`);
+        }
+      };
+
+      recognition.onend = () => {
+        const finalClean = capturedTranscript.trim();
+        capturedTranscript = '';
+        document.getElementById('ptt-sublabel').textContent = 'RELEASE OR SWITCH TAB TO AUTO-MUTE';
+
+        if (finalClean && shipState.isOnBridge && shipState.isWindowVisible) {
+          processUserCommand(finalClean);
+        } else if (!shipState.isPttHeld) {
+          setAiState(shipState.isOnBridge && shipState.isWindowVisible ? 'IDLE' : 'MUTED');
+        }
+      };
+    }
+
+    function startPushToTalk() {
+      // Strictly disallow PTT when off Bridge Overview or when browser tab is hidden
+      if (!shipState.isOnBridge || !shipState.isWindowVisible) {
+        enforceCommsSafetyMute('COMMS MUTED - RETURN TO BRIDGE OVERVIEW');
+        return;
+      }
+      if (shipState.isPttHeld) return;
+
+      shipState.isPttHeld = true;
+      stopSpeaking(); // Interrupt AI speaking when captain presses PTT
+      playSciFiChirp('ptt_on');
+
+      const pttBtn = document.getElementById('ptt-button');
+      pttBtn.classList.add('listening');
+      document.getElementById('ptt-label').textContent = 'LISTENING... RELEASE TO TRANSMIT';
+      setAiState('LISTENING');
+
+      if (recognition) {
+        capturedTranscript = '';
+        try {
+          recognition.start();
+        } catch (e) {
+          // Already started
+        }
+      } else {
+        document.getElementById('ptt-sublabel').textContent = 'SPEECH API UNAVAILABLE IN BROWSER - USE TEXT INPUT';
+      }
+    }
+
+    function releasePushToTalk() {
+      if (!shipState.isPttHeld) return;
+      shipState.isPttHeld = false;
+      playSciFiChirp('ptt_off');
+
+      const pttBtn = document.getElementById('ptt-button');
+      pttBtn.classList.remove('listening');
+      document.getElementById('ptt-label').textContent = 'HOLD TO SPEAK [SPACE / PTT]';
+
+      if (recognition) {
+        try {
+          recognition.stop();
+        } catch (e) {}
+      } else {
+        setAiState(shipState.isOnBridge && shipState.isWindowVisible ? 'IDLE' : 'MUTED');
+      }
+    }
+
+    /**
+     * Strictly disables microphone listening and active voice output
+     * whenever navigating away from Bridge Overview or leaving browser tab.
+     */
+    function enforceCommsSafetyMute(reasonText) {
+      shipState.isPttHeld = false;
+      capturedTranscript = '';
+
+      if (recognition) {
+        try { recognition.abort(); } catch (e) {}
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      shipState.speechIntensity = 0;
+
+      const pttBtn = document.getElementById('ptt-button');
+      pttBtn.classList.remove('listening');
+      pttBtn.classList.add('muted-off-bridge');
+      document.getElementById('ptt-label').textContent = 'VOICE COMMS DISABLED';
+      document.getElementById('ptt-sublabel').textContent = reasonText;
+      document.getElementById('comms-safety-text').textContent = reasonText;
+      setAiState('MUTED');
+    }
+
+    function restoreCommsReady() {
+      if (!shipState.isOnBridge || !shipState.isWindowVisible) return;
+      const pttBtn = document.getElementById('ptt-button');
+      pttBtn.classList.remove('muted-off-bridge');
+      document.getElementById('ptt-label').textContent = 'HOLD TO SPEAK [SPACE / PTT]';
+      document.getElementById('ptt-sublabel').textContent = 'RELEASE OR SWITCH TAB TO AUTO-MUTE';
+      document.getElementById('comms-safety-text').textContent = 'COMMS READY // HOLD PTT TO SPEAK';
+      setAiState('IDLE');
+    }
+
+    // Bind Mouse & Touch events for Push-to-Talk button
+    const pttBtnEl = document.getElementById('ptt-button');
+    pttBtnEl.addEventListener('mousedown', (e) => { e.preventDefault(); startPushToTalk(); });
+    window.addEventListener('mouseup', () => { if (shipState.isPttHeld) releasePushToTalk(); });
+    pttBtnEl.addEventListener('touchstart', (e) => { e.preventDefault(); startPushToTalk(); }, { passive: false });
+    pttBtnEl.addEventListener('touchend', (e) => { e.preventDefault(); releasePushToTalk(); });
+    pttBtnEl.addEventListener('touchcancel', () => { releasePushToTalk(); });
+
+    // Hold Spacebar for PTT (when not typing in an input)
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'SELECT') {
+        e.preventDefault();
+        if (!e.repeat) startPushToTalk();
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' && shipState.isPttHeld) {
+        e.preventDefault();
+        releasePushToTalk();
+      }
+    });
+
+    // Auto-disable voice chat on browser tab switch or window blur
+    document.addEventListener('visibilitychange', () => {
+      shipState.isWindowVisible = !document.hidden;
+      if (document.hidden) {
+        enforceCommsSafetyMute('COMMS MUTED - WINDOW INACTIVE');
+      } else if (shipState.isOnBridge) {
+        restoreCommsReady();
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      if (shipState.isPttHeld) {
+        releasePushToTalk();
+      }
+    });
+
+    function setAiState(state) {
+      shipState.aiState = state;
+      const badge = document.getElementById('ai-state-badge');
+      const micDot = document.getElementById('comms-mic-indicator');
+      if (badge) badge.textContent = `STATE: ${state}`;
+
+      if (micDot) {
+        if (state === 'LISTENING') {
+          micDot.className = 'w-2.5 h-2.5 rounded-full bg-current animate-pulse-fast opacity-100';
+        } else if (state === 'SPEAKING' || state === 'PROCESSING') {
+          micDot.className = 'w-2.5 h-2.5 rounded-full bg-current opacity-90';
+        } else {
+          micDot.className = 'w-2.5 h-2.5 rounded-full bg-current opacity-35';
+        }
+      }
+    }
+
+    // --- SUBSYSTEM NAVIGATION & INTERACTIVE CONTROLS ---
+    function switchSubsystem(tabId) {
+      playSciFiChirp('click');
+      shipState.activeTab = tabId;
+
+      // Update Tab Active Styling
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+
+      // Show Selected View
+      document.querySelectorAll('.subsystem-view').forEach(view => {
+        view.classList.add('hidden');
+      });
+      const activeView = document.getElementById(`view-${tabId}`);
+      if (activeView) activeView.classList.remove('hidden');
+
+      // Enforce Voice Chat Auto-Disable when navigating away from Bridge Overview
+      if (tabId === 'bridge') {
+        shipState.isOnBridge = true;
+        restoreCommsReady();
+      } else {
+        shipState.isOnBridge = false;
+        enforceCommsSafetyMute(`COMMS MUTED - OFF BRIDGE (${tabId.toUpperCase()})`);
+      }
+    }
+
+    function toggleRedAlert(forceState = null) {
+      shipState.redAlert = forceState !== null ? forceState : !shipState.redAlert;
+      document.body.classList.toggle('red-alert', shipState.redAlert);
+
+      const alertBadge = document.getElementById('alert-badge');
+      const alertBtn = document.getElementById('red-alert-btn');
+
+      if (shipState.redAlert) {
+        playSciFiChirp('alert');
+        alertBadge.textContent = 'CONDITION RED // BATTLE STATIONS';
+        alertBadge.classList.add('animate-pulse-fast');
+        alertBtn.classList.add('engaged');
+        shipState.weaponsArmed = true;
+        document.getElementById('weapons-status-tag').textContent = 'WEAPONS: ARMED & HOT';
+        document.getElementById('btn-arm-weapons').classList.add('engaged');
+      } else {
+        playSciFiChirp('click');
+        alertBadge.textContent = 'CONDITION GREEN';
+        alertBadge.classList.remove('animate-pulse-fast');
+        alertBtn.classList.remove('engaged');
+      }
+    }
+
+    function toggleWarpDrive(forceEngage = null) {
+      playSciFiChirp('click');
+      shipState.warpEngaged = forceEngage !== null ? forceEngage : !shipState.warpEngaged;
+      const btn = document.getElementById('btn-engage-warp');
+
+      if (shipState.warpEngaged) {
+        if (shipState.warpFactor < 1) {
+          shipState.warpFactor = 6.4;
+          document.getElementById('warp-factor-slider').value = 6.4;
+        }
+        btn.classList.add('engaged');
+        btn.textContent = 'DISENGAGE WARP';
+        document.getElementById('warp-status-tag').textContent = `DRIVE: WARP ${shipState.warpFactor.toFixed(1)} ACTIVE`;
+      } else {
+        shipState.warpFactor = 0.0;
+        document.getElementById('warp-factor-slider').value = 0;
+        btn.classList.remove('engaged');
+        btn.textContent = 'ENGAGE WARP';
+        document.getElementById('warp-status-tag').textContent = 'DRIVE: SUBLIGHT IMPULSE';
+      }
+    }
+
+    function setWarpFactor(val) {
+      const factor = parseFloat(val);
+      shipState.warpFactor = factor;
+      shipState.warpEngaged = factor > 0;
+      const btn = document.getElementById('btn-engage-warp');
+      if (shipState.warpEngaged) {
+        btn.classList.add('engaged');
+        btn.textContent = 'DISENGAGE WARP';
+        document.getElementById('warp-status-tag').textContent = `DRIVE: WARP ${factor.toFixed(1)} ACTIVE`;
+      } else {
+        btn.classList.remove('engaged');
+        btn.textContent = 'ENGAGE WARP';
+        document.getElementById('warp-status-tag').textContent = 'DRIVE: SUBLIGHT IMPULSE';
+      }
+    }
+
+    function boostShields() {
+      playSciFiChirp('click');
+      shipState.shields = 100.0;
+      shipState.foreShields = 100;
+      shipState.aftShields = 100;
+      document.getElementById('btn-raise-shields').classList.add('engaged');
+      setTimeout(() => document.getElementById('btn-raise-shields').classList.remove('engaged'), 1200);
+    }
+
+    function rotateHarmonics() {
+      playSciFiChirp('click');
+      const freq = (240 + Math.random() * 520).toFixed(1);
+      document.getElementById('tac-target-lock').textContent = `DEFLECTOR HARMONICS ROTATED TO ${freq} THz.`;
+    }
+
+    function toggleWeaponsArm() {
+      playSciFiChirp('click');
+      shipState.weaponsArmed = !shipState.weaponsArmed;
+      const btn = document.getElementById('btn-arm-weapons');
+      btn.classList.toggle('engaged', shipState.weaponsArmed);
+      document.getElementById('weapons-status-tag').textContent = shipState.weaponsArmed ? 'WEAPONS: ARMED & HOT' : 'WEAPONS: STANDBY';
+    }
+
+    function fireTestPulse() {
+      playSciFiChirp('alert');
+      document.getElementById('tac-target-lock').textContent = 'DIAGNOSTIC PHASER PULSE DISCHARGED. CAPACITORS RECHARGING.';
+    }
+
+    function runSensorSweep() {
+      playSciFiChirp('click');
+      const findings = [
+        'SUBSPACE SWEEP COMPLETE: IONIZED NEBULA FILAMENT AT BEARING 084, RANGE 2.1 LIGHT YEARS.',
+        'LONG-RANGE SCAN: CLASS-M EXOPLANET DETECTED IN ADJACENT SYSTEM. NO HOSTILE SIGNATURES.',
+        'GRAVIMETRIC SCAN: ZERO SPATIAL ANOMALIES WITHIN 5.0 PARSECS. CORRIDOR CLEAR.'
+      ];
+      const msg = findings[Math.floor(Math.random() * findings.length)];
+      document.getElementById('sensor-scan-result').textContent = msg;
+      return msg;
+    }
+
+    function plotNewCourse() {
+      playSciFiChirp('click');
+      shipState.heading = parseFloat((Math.random() * 359.9).toFixed(1));
+      const mark = Math.floor(Math.random() * 90);
+      document.getElementById('nav-heading').textContent = `${shipState.heading} MARK ${mark.toString().padStart(2, '0')}`;
+    }
+
+    function ventPlasma() {
+      playSciFiChirp('click');
+      shipState.coreTemp = Math.max(1250, shipState.coreTemp - 420);
+      document.getElementById('prop-containment').textContent = 'PURGED & OPTIMAL';
+    }
+
+    function boostLifeSupport() {
+      playSciFiChirp('click');
+      shipState.o2Level = 100.0;
+      shipState.scrubberEfficiency = 100.0;
+    }
+
+    function rebalancePower(changedChannel, newVal) {
+      playSciFiChirp('click');
+      val = parseInt(newVal, 10);
+      const rem = 100 - val;
+      if (changedChannel === 'prop') {
+        shipState.powerGrid.prop = val;
+        shipState.powerGrid.shd = Math.round(rem * 0.58);
+        shipState.powerGrid.ls = rem - shipState.powerGrid.shd;
+      } else if (changedChannel === 'shd') {
+        shipState.powerGrid.shd = val;
+        shipState.powerGrid.prop = Math.round(rem * 0.62);
+        shipState.powerGrid.ls = rem - shipState.powerGrid.prop;
+      } else {
+        shipState.powerGrid.ls = val;
+        shipState.powerGrid.prop = Math.round(rem * 0.55);
+        shipState.powerGrid.shd = rem - shipState.powerGrid.prop;
+      }
+      document.getElementById('pwr-prop-val').textContent = `${shipState.powerGrid.prop}%`;
+      document.getElementById('pwr-shd-val').textContent = `${shipState.powerGrid.shd}%`;
+      document.getElementById('pwr-ls-val').textContent = `${shipState.powerGrid.ls}%`;
+    }
+
+    // --- GEMINI API & LOCAL COMMAND INTELLIGENCE ---
+    function appendChatMessage(sender, text) {
+      const log = document.getElementById('chat-log');
+      const div = document.createElement('div');
+      div.className = 'border-l-2 border-current pl-2.5 py-0.5';
+      div.innerHTML = `<span class="opacity-65">[${sender}]:</span> ${escapeHtml(text)}`;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function clearTranscript() {
+      playSciFiChirp('click');
+      document.getElementById('chat-log').innerHTML = '';
+      appendChatMessage('A.U.R.A.', 'Communications log cleared. Awaiting orders, Captain.');
+    }
+
+    function escapeHtml(str) {
+      const p = document.createElement('p');
+      p.textContent = str;
+      return p.innerHTML;
+    }
+
+    function handleTextCommandSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('command-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      processUserCommand(text);
+    }
+
+    /**
+     * Executes local ship system commands immediately if detected in speech/text,
+     * and returns an action summary for A.U.R.A. to report.
+     */
+    function executeShipDirectives(promptLower) {
+      const actionsTaken = [];
+
+      if (promptLower.includes('red alert') || promptLower.includes('battle stations')) {
+        toggleRedAlert(true);
+        actionsTaken.push('Condition Red activated and tactical arrays armed.');
+      } else if (promptLower.includes('stand down') || promptLower.includes('green alert') || promptLower.includes('cancel alert')) {
+        toggleRedAlert(false);
+        actionsTaken.push('Standing down from Red Alert. Condition Green restored.');
+      }
+
+      if (promptLower.includes('engage warp') || promptLower.includes('go to warp') || promptLower.includes('warp speed')) {
+        const match = promptLower.match(/warp\s*(\d+(\.\d+)?)/);
+        if (match) {
+          setWarpFactor(Math.min(9.9, parseFloat(match[1])));
+        } else {
+          toggleWarpDrive(true);
+        }
+        actionsTaken.push(`Warp drive engaged at Warp ${shipState.warpFactor.toFixed(1)}.`);
+      } else if (promptLower.includes('disengage warp') || promptLower.includes('drop out of warp') || promptLower.includes('all stop') || promptLower.includes('impulse')) {
+        toggleWarpDrive(false);
+        actionsTaken.push('Warp field collapsed. Returning to sublight impulse propulsion.');
+      }
+
+      if (promptLower.includes('shield') && (promptLower.includes('raise') || promptLower.includes('max') || promptLower.includes('boost') || promptLower.includes('up'))) {
+        boostShields();
+        actionsTaken.push('Deflector shields reinforced to 100 percent capacity.');
+      }
+
+      if (promptLower.includes('scan') || promptLower.includes('sensor sweep')) {
+        const finding = runSensorSweep();
+        actionsTaken.push(finding);
+      }
+
+      if (promptLower.includes('life support') || promptLower.includes('oxygen') || promptLower.includes('purge o2')) {
+        boostLifeSupport();
+        actionsTaken.push('Atmospheric scrubbers cycled and oxygen saturation boosted to 100 percent.');
+      }
+
+      return actionsTaken;
+    }
+
+    function generateLocalFallbackReply(userText, actionsTaken) {
+      const lower = userText.toLowerCase();
+      if (actionsTaken.length > 0) {
+        return `Affirmative, Captain. ${actionsTaken.join(' ')}`;
+      }
+      if (lower.includes('status') || lower.includes('report') || lower.includes('diagnostics')) {
+        const speed = shipState.warpEngaged ? `Warp ${shipState.warpFactor.toFixed(1)}` : 'sublight impulse';
+        return `All primary systems aboard USS Hyperion are operational. Hull integrity is at ${shipState.hull.toFixed(1)} percent, deflector shields are holding at ${shipState.shields.toFixed(1)} percent, and propulsion is currently at ${speed}.`;
+      }
+      if (lower.includes('who are you') || lower.includes('hello') || lower.includes('hi aura')) {
+        return `I am AURA, the Autonomous Unified Reconnaissance and Astrometrics core aboard the USS Hyperion. How may I assist you on the bridge today?`;
+      }
+      return `Command acknowledged: "${userText}". Telemetry across all five starship subsystems remains within nominal parameters.`;
+    }
+
+    async function processUserCommand(userText) {
+      appendChatMessage('CAPTAIN', userText);
+      setAiState('PROCESSING');
+
+      const actionsTaken = executeShipDirectives(userText.toLowerCase());
+      const customKey = document.getElementById('gemini-api-key')?.value?.trim() || '';
+      const apiKey = customKey || ""; // Canvas runtime injects key when empty string is used
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const telemetryContext = `Current Ship State: Alert=${shipState.redAlert ? 'RED ALERT' : 'GREEN'}, Velocity=${shipState.warpEngaged ? 'Warp ' + shipState.warpFactor.toFixed(1) : 'Impulse 0.25c'}, Shields=${shipState.shields.toFixed(1)}%, Hull=${shipState.hull.toFixed(1)}%, CoreTemp=${Math.round(shipState.coreTemp)}K, O2=${shipState.o2Level.toFixed(1)}%. Actions just executed by bridge controls: ${actionsTaken.length ? actionsTaken.join(' ') : 'None'}.`;
+
+      const systemInstruction = `You are AURA, the advanced synthetic Starship AI aboard the USS Hyperion (NX-9402). Respond concisely in 1 to 3 crisp, natural-sounding spoken sentences suitable for voice synthesis. Stay strictly in character as a calm, intelligent, futuristic starship computer. Do not use markdown asterisks, emojis, or bullet symbols. Incorporate the current telemetry or executed actions naturally. ${telemetryContext}`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userText }] }],
+        systemInstruction: {
+          parts: [{ text: systemInstruction }]
+        }
+      };
+
+      // Exponential backoff fetch with seamless local fallback if offline or unauthorized
+      let aiReply = null;
+      const delays = [1000, 2000];
+      for (let attempt = 0; attempt <= delays.length; attempt++) {
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = await response.json();
+          const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (candidateText) {
+            aiReply = candidateText.replace(/[*#_`]/g, '').trim();
+            document.getElementById('api-status-label').textContent = 'GEMINI ONLINE';
+            break;
+          }
+        } catch (err) {
+          if (attempt < delays.length) {
+            await new Promise(res => setTimeout(res, delays[attempt]));
+          }
+        }
+      }
+
+      if (!aiReply) {
+        document.getElementById('api-status-label').textContent = 'LOCAL CORE';
+        aiReply = generateLocalFallbackReply(userText, actionsTaken);
+      }
+
+      appendChatMessage('A.U.R.A.', aiReply);
+      speakAIResponse(aiReply);
+    }
+
+    // --- HOLOGRAPHIC AI AVATAR & SUBSYSTEM CANVAS ANIMATIONS ---
+    const holoCanvas = document.getElementById('hologram-canvas');
+    const holoCtx = holoCanvas.getContext('2d');
+    const bridgeWaveCanvas = document.getElementById('bridge-waveform-canvas');
+    const bridgeWaveCtx = bridgeWaveCanvas.getContext('2d');
+    const propCanvas = document.getElementById('propulsion-canvas');
+    const propCtx = propCanvas.getContext('2d');
+    const radarCanvas = document.getElementById('radar-canvas');
+    const radarCtx = radarCanvas.getContext('2d');
+
+    function resizeCanvases() {
+      [holoCanvas, bridgeWaveCanvas, propCanvas, radarCanvas].forEach(c => {
+        if (!c) return;
+        const rect = c.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          c.width = Math.floor(rect.width * window.devicePixelRatio);
+          c.height = Math.floor(rect.height * window.devicePixelRatio);
+        }
+      });
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    // Pre-generate 3D-projected geodesic neural nodes for the holographic AI entity
+    const holoNodes = [];
+    for (let i = 0; i < 42; i++) {
+      const phi = Math.acos(-1 + (2 * i) / 42);
+      const theta = Math.sqrt(42 * Math.PI) * phi;
+      holoNodes.push({
+        x: Math.cos(theta) * Math.sin(phi),
+        y: Math.sin(theta) * Math.sin(phi),
+        z: Math.cos(phi)
+      });
+    }
+
+    let animTime = 0;
+
+    function renderAnimations() {
+      animTime += 0.025;
+      const primaryColor = shipState.redAlert ? '#ff2a4b' : '#00f3ff';
+      const dimColor = shipState.redAlert ? 'rgba(255, 42, 75, 0.22)' : 'rgba(0, 243, 255, 0.22)';
+
+      // 1. RENDER HOLOGRAPHIC AI ENTITY
+      if (holoCanvas.width > 0 && holoCanvas.height > 0) {
+        const w = holoCanvas.width;
+        const h = holoCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const baseRadius = Math.min(w, h) * 0.31;
+
+        holoCtx.clearRect(0, 0, w, h);
+
+        // State-reactive energy multiplier
+        let energy = 0.15;
+        if (shipState.aiState === 'LISTENING') energy = 0.85 + Math.sin(animTime * 8) * 0.2;
+        else if (shipState.aiState === 'SPEAKING') energy = 0.65 + (shipState.speechIntensity || Math.abs(Math.sin(animTime * 11)) * 0.5);
+        else if (shipState.aiState === 'PROCESSING') energy = 0.55;
+        else if (shipState.aiState === 'MUTED') energy = 0.04;
+
+        // Outer Chamfered Octagonal Targeting Reticle
+        holoCtx.save();
+        holoCtx.translate(cx, cy);
+        holoCtx.rotate(animTime * (shipState.aiState === 'PROCESSING' ? 1.4 : 0.18));
+        holoCtx.strokeStyle = dimColor;
+        holoCtx.lineWidth = 2;
+        holoCtx.beginPath();
+        const outerR = baseRadius * 1.38;
+        for (let i = 0; i < 8; i++) {
+          const ang = (i * Math.PI) / 4;
+          const px = Math.cos(ang) * outerR;
+          const py = Math.sin(ang) * outerR;
+          if (i === 0) holoCtx.moveTo(px, py);
+          else holoCtx.lineTo(px, py);
+        }
+        holoCtx.closePath();
+        holoCtx.stroke();
+        holoCtx.restore();
+
+        // Counter-rotating segmented arc ring
+        holoCtx.save();
+        holoCtx.translate(cx, cy);
+        holoCtx.rotate(-animTime * 0.45);
+        holoCtx.strokeStyle = primaryColor;
+        holoCtx.lineWidth = 2.5;
+        for (let i = 0; i < 4; i++) {
+          holoCtx.beginPath();
+          holoCtx.arc(0, 0, baseRadius * 1.16, i * (Math.PI / 2) + 0.18, (i + 1) * (Math.PI / 2) - 0.18);
+          holoCtx.stroke();
+        }
+        holoCtx.restore();
+
+        // 3D Geodesic Neural Constellation Core
+        const rotY = animTime * (0.45 + energy * 0.8);
+        const rotX = Math.sin(animTime * 0.3) * 0.35;
+        const projected = holoNodes.map(n => {
+          // Rotate Y
+          const x1 = n.x * Math.cos(rotY) - n.z * Math.sin(rotY);
+          const z1 = n.z * Math.cos(rotY) + n.x * Math.sin(rotY);
+          // Rotate X
+          const y2 = n.y * Math.cos(rotX) - z1 * Math.sin(rotX);
+          const z2 = z1 * Math.cos(rotX) + n.y * Math.sin(rotX);
+
+          const pulse = 1 + energy * 0.16 * Math.sin(animTime * 6 + n.y * 5);
+          const scale = (2.4 / (2.4 - z2)) * baseRadius * 0.78 * pulse;
+          return {
+            x: cx + x1 * scale,
+            y: cy + y2 * scale,
+            z: z2
+          };
+        });
+
+        // Connect nearby neural vertices
+        holoCtx.strokeStyle = dimColor;
+        holoCtx.lineWidth = 1.2;
+        for (let i = 0; i < projected.length; i++) {
+          for (let j = i + 1; j < projected.length; j++) {
+            const dx = projected[i].x - projected[j].x;
+            const dy = projected[i].y - projected[j].y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < baseRadius * 0.56) {
+              holoCtx.beginPath();
+              holoCtx.moveTo(projected[i].x, projected[i].y);
+              holoCtx.lineTo(projected[j].x, projected[j].y);
+              holoCtx.stroke();
+            }
+          }
+        }
+
+        // Draw Neural Nodes
+        projected.forEach(p => {
+          const alpha = p.z > 0 ? 0.95 : 0.35;
+          holoCtx.fillStyle = primaryColor;
+          holoCtx.globalAlpha = alpha;
+          holoCtx.beginPath();
+          holoCtx.arc(p.x, p.y, p.z > 0 ? 2.6 : 1.5, 0, Math.PI * 2);
+          holoCtx.fill();
+        });
+        holoCtx.globalAlpha = 1;
+
+        // Central Optic Iris & Reactive Lip-Sync Voice Bars
+        const irisR = baseRadius * (0.32 + energy * 0.12);
+        const grad = holoCtx.createRadialGradient(cx, cy, 2, cx, cy, irisR * 1.4);
+        grad.addColorStop(0, primaryColor);
+        grad.addColorStop(1, 'rgba(2, 6, 10, 0)');
+        holoCtx.fillStyle = grad;
+        holoCtx.beginPath();
+        holoCtx.arc(cx, cy, irisR * 1.4, 0, Math.PI * 2);
+        holoCtx.fill();
+
+        // Voice equalizer bars across center
+        const barCount = 13;
+        const barSpacing = (baseRadius * 0.95) / barCount;
+        holoCtx.fillStyle = '#02060a';
+        for (let b = 0; b < barCount; b++) {
+          const distCenter = Math.abs(b - Math.floor(barCount / 2));
+          const envelope = 1 - distCenter / (barCount * 0.6);
+          const wave = Math.abs(Math.sin(animTime * 10 + b * 0.9));
+          const barH = Math.max(4, baseRadius * 0.55 * envelope * (0.18 + energy * wave));
+          const bx = cx + (b - Math.floor(barCount / 2)) * barSpacing - 2;
+          holoCtx.fillRect(bx, cy - barH / 2, 4, barH);
+        }
+      }
+
+      // 2. RENDER BRIDGE HARMONIC WAVEFORM
+      if (bridgeWaveCanvas.width > 0 && !document.getElementById('view-bridge').classList.contains('hidden')) {
+        const w = bridgeWaveCanvas.width;
+        const h = bridgeWaveCanvas.height;
+        bridgeWaveCtx.clearRect(0, 0, w, h);
+
+        // Grid line
+        bridgeWaveCtx.strokeStyle = dimColor;
+        bridgeWaveCtx.lineWidth = 1;
+        bridgeWaveCtx.beginPath();
+        bridgeWaveCtx.moveTo(0, h / 2);
+        bridgeWaveCtx.lineTo(w, h / 2);
+        bridgeWaveCtx.stroke();
+
+        // Primary Waveform
+        bridgeWaveCtx.strokeStyle = primaryColor;
+        bridgeWaveCtx.lineWidth = 2.2;
+        bridgeWaveCtx.beginPath();
+        const freqMult = shipState.warpEngaged ? 0.045 : 0.02;
+        const ampMult = shipState.warpEngaged ? 0.42 : 0.24;
+        for (let x = 0; x < w; x += 3) {
+          const y = h / 2 +
+            Math.sin(x * freqMult + animTime * 4) * (h * ampMult) * Math.sin(x / w * Math.PI) +
+            Math.cos(x * 0.06 - animTime * 6) * (h * 0.08);
+          if (x === 0) bridgeWaveCtx.moveTo(x, y);
+          else bridgeWaveCtx.lineTo(x, y);
+        }
+        bridgeWaveCtx.stroke();
+      }
+
+      // 3. RENDER PROPULSION FLUX GRAPH
+      if (propCanvas.width > 0 && !document.getElementById('view-propulsion').classList.contains('hidden')) {
+        const w = propCanvas.width;
+        const h = propCanvas.height;
+        propCtx.clearRect(0, 0, w, h);
+        propCtx.strokeStyle = primaryColor;
+        propCtx.lineWidth = 2;
+        propCtx.beginPath();
+        const intensity = 0.15 + (shipState.warpFactor / 10) * 0.7;
+        for (let x = 0; x < w; x += 4) {
+          const y = h / 2 + Math.sin(x * 0.03 + animTime * (3 + shipState.warpFactor)) * (h * 0.4 * intensity);
+          if (x === 0) propCtx.moveTo(x, y);
+          else propCtx.lineTo(x, y);
+        }
+        propCtx.stroke();
+      }
+
+      // 4. RENDER ASTROMETRICS RADAR SWEEP
+      if (radarCanvas.width > 0 && !document.getElementById('view-navigation').classList.contains('hidden')) {
+        const w = radarCanvas.width;
+        const h = radarCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const r = Math.min(w, h) * 0.44;
+        radarCtx.clearRect(0, 0, w, h);
+
+        radarCtx.strokeStyle = dimColor;
+        radarCtx.lineWidth = 1.5;
+        [0.33, 0.66, 1].forEach(scale => {
+          radarCtx.beginPath();
+          radarCtx.arc(cx, cy, r * scale, 0, Math.PI * 2);
+          radarCtx.stroke();
+        });
+
+        // Rotating sweep line
+        const sweepAngle = animTime * 1.6;
+        radarCtx.strokeStyle = primaryColor;
+        radarCtx.lineWidth = 2;
+        radarCtx.beginPath();
+        radarCtx.moveTo(cx, cy);
+        radarCtx.lineTo(cx + Math.cos(sweepAngle) * r, cy + Math.sin(sweepAngle) * r);
+        radarCtx.stroke();
+
+        // Blip
+        radarCtx.fillStyle = primaryColor;
+        radarCtx.beginPath();
+        radarCtx.arc(cx + r * 0.48, cy - r * 0.35, 4, 0, Math.PI * 2);
+        radarCtx.fill();
+      }
+
+      requestAnimationFrame(renderAnimations);
+    }
+
+    // --- DYNAMIC TELEMETRY SIMULATION LOOP (UPDATES EVERY 900ms) ---
+    function updateTelemetryTick() {
+      // Fluctuate metrics realistically based on ship state
+      if (shipState.warpEngaged) {
+        shipState.coreTemp = Math.min(4850, shipState.coreTemp + (Math.random() * 65 - 20));
+        shipState.antimatterFlow = +(28.5 + shipState.warpFactor * 6.4 + (Math.random() * 1.4 - 0.7)).toFixed(1);
+        shipState.reactorOutput = Math.round(6200 + shipState.warpFactor * 340 + (Math.random() * 90 - 45));
+        shipState.coords.x = +(shipState.coords.x + shipState.warpFactor * 0.14).toFixed(2);
+        shipState.coords.y = +(shipState.coords.y + Math.sin(animTime) * 0.08).toFixed(2);
+      } else {
+        shipState.coreTemp = Math.max(1380, shipState.coreTemp + (Math.random() * 30 - 18));
+        shipState.antimatterFlow = +(14.0 + (Math.random() * 0.8 - 0.4)).toFixed(1);
+        shipState.reactorOutput = Math.round(4780 + (Math.random() * 80 - 40));
+        shipState.coords.x = +(shipState.coords.x + 0.02).toFixed(2);
+      }
+
+      // Gradual shield recharge if below 100%
+      if (shipState.shields < 100) {
+        shipState.shields = Math.min(100, +(shipState.shields + 0.15).toFixed(1));
+      }
+
+      // Update Bridge Overview DOM
+      document.getElementById('ov-warp').textContent = shipState.warpEngaged
+        ? `WARP ${shipState.warpFactor.toFixed(1)}`
+        : `IMPULSE ${(0.24 + Math.random() * 0.02).toFixed(2)}c`;
+      document.getElementById('ov-warp-bar').style.width = shipState.warpEngaged
+        ? `${Math.min(100, (shipState.warpFactor / 9.9) * 100)}%`
+        : '22%';
+
+      document.getElementById('ov-shields').textContent = `${shipState.shields.toFixed(1)}%`;
+      document.getElementById('ov-shields-bar').style.width = `${shipState.shields}%`;
+
+      document.getElementById('ov-power').textContent = `${shipState.reactorOutput.toLocaleString()} TW`;
+      document.getElementById('ov-power-bar').style.width = `${Math.min(100, (shipState.reactorOutput / 10000) * 100)}%`;
+
+      document.getElementById('ov-o2').textContent = `${shipState.o2Level.toFixed(1)}%`;
+      document.getElementById('ov-o2-bar').style.width = `${shipState.o2Level}%`;
+
+      // Update Propulsion DOM
+      document.getElementById('prop-warp-factor').textContent = `WARP ${shipState.warpFactor.toFixed(1)}`;
+      document.getElementById('prop-core-temp').textContent = `${Math.round(shipState.coreTemp).toLocaleString()} K`;
+      document.getElementById('prop-antimatter').textContent = `${shipState.antimatterFlow} mg/s`;
+
+      // Update Tactical DOM
+      document.getElementById('tac-fore').textContent = `${Math.round(shipState.shields)}%`;
+      document.getElementById('tac-aft').textContent = `${Math.max(0, Math.round(shipState.shields - 2))}%`;
+
+      // Update Navigation DOM
+      document.getElementById('nav-coords').textContent = `X: ${shipState.coords.x} // Y: ${shipState.coords.y}`;
+
+      // Update Life Support DOM
+      document.getElementById('ls-o2').textContent = `${(20.8 + (shipState.o2Level - 99) * 0.1).toFixed(1)}%`;
+      document.getElementById('ls-scrub').textContent = `${shipState.scrubberEfficiency.toFixed(1)}%`;
+
+      // Update Stardate Clock
+      const now = new Date();
+      const secs = now.getSeconds().toString().padStart(2, '0');
+      const mins = now.getMinutes().toString().padStart(2, '0');
+      const hrs = now.getHours().toString().padStart(2, '0');
+      document.getElementById('stardate-clock').textContent = `STARDATE 2026.319 // ${hrs}:${mins}:${secs}`;
+    }
+
+    // Initialize on Window Load
+    window.addEventListener('load', () => {
+      resizeCanvases();
+      updateTelemetryTick();
+      setInterval(updateTelemetryTick, 900);
+      requestAnimationFrame(renderAnimations);
+    });
+  </script>
+</body>
+</html>
